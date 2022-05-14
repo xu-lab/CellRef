@@ -10,6 +10,7 @@ Web interfaces to LungMAP CellRefs:
 - LGEA CellRef interfaces: https://research.cchmc.org/pbge/lunggens/CellRef/LungMapCellRef.html
 - LungMAP CellRef Azimuth instances: https://app.lungmap.net/app/azimuth-lung-cell-cards-human
 - LungMAP CellRef ShinyCell apps: https://app.lungmap.net/app/shinycell-lung-cellcards-human-mnn
+- LungMAP CellCards: https://lungmap.net/cell-cards/
 
 Please note that the LungMAP CellRef Azimuth instance and ShinyCell apps are currently hosting an early version of the LungMAP Human Lung CellRef Seed and CellRef. We are updating the data to LungMAP CellRef and CellRef Seed v1. 
 
