@@ -8,8 +8,8 @@ The LungMAP CellRefs v1 were constructed using a guided computational pipeline t
 Web interfaces to LungMAP CellRefs:
 
 - LGEA CellRef interfaces: https://research.cchmc.org/pbge/lunggens/CellRef/LungMapCellRef.html
-- LungMAP CellRef Azimuth instances:
+- LungMAP CellRef Azimuth instances: https://app.lungmap.net/app/azimuth-lung-cell-cards-human
 - LungMAP CellRef ShinyCell apps: https://app.lungmap.net/app/shinycell-lung-cellcards-human-mnn
 
-Please note that the LungMAP CellRef Azimuth instance and ShinyCell apps are currently hosting an version of the human lung CellRef Seed and CellRef. We are updating the data to LungMAP CellRef and CellRef v1. 
+Please note that the LungMAP CellRef Azimuth instance and ShinyCell apps are currently hosting an early version of the LungMAP Human Lung CellRef Seed and CellRef. We are updating the data to LungMAP CellRef and CellRef Seed v1. 
 
