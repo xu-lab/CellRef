@@ -11,5 +11,3 @@ Web interfaces to LungMAP CellRefs:
 - LungMAP CellRef ShinyCell apps: https://app.lungmap.net/app/shinycell-human-lung-cellref
 - LungMAP CellRef Azimuth instances: https://app.lungmap.net/app/azimuth-human-lung-cellref-seed
 - LungMAP CellCards: https://lungmap.net/cell-cards/
-
-Please note that the LungMAP CellRef Azimuth instance and ShinyCell apps are currently hosting an early version of the LungMAP Human Lung CellRef Seed and CellRef. We are updating the data in the Azimuth instance and ShinyCell to the LungMAP CellRef v1. We will also upload the code with tutorials to this github soon.
