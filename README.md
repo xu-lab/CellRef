@@ -11,3 +11,7 @@ Web interfaces to LungMAP CellRefs:
 - LungMAP CellRef ShinyCell apps: https://app.lungmap.net/app/shinycell-human-lung-cellref
 - LungMAP CellRef Azimuth instances: https://app.lungmap.net/app/azimuth-human-lung-cellref-seed
 - LungMAP CellCards: https://lungmap.net/cell-cards/
+
+Vignette: 
+
+- Demonstration using scRNA-seq of lung endothelial cells [lung_endo_vignette](./vignette/lung_endo_vignette.html)
