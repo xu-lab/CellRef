@@ -14,4 +14,4 @@ Web interfaces to LungMAP CellRefs:
 
 Vignette: 
 
-- Demonstration using scRNA-seq of lung endothelial cells [lung_endo_vignette](vignette/lung_endo_vignette.Rmd)
+- Demonstration using scRNA-seq of lung endothelial cells [lung_endo_vignette](vignette/lung_endo_vignette.pdf)
