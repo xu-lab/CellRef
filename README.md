@@ -12,6 +12,53 @@ Web interfaces to LungMAP CellRefs:
 - LungMAP CellRef Azimuth instances: https://app.lungmap.net/app/azimuth-human-lung-cellref-seed
 - LungMAP CellCards: https://lungmap.net/cell-cards/
 
-Vignette: 
+# Vignette: 
 
 - Demonstration of Guided CellRef construction using scRNA-seq of human lung endothelial cells [lung_endo_vignette](vignette/lung_endo_vignette.pdf)
+
+# System requirements 
+
+CellRef has been tested on R versions >= 4.1 on Windows 10 64bit and macOS (Monterey) platforms. Please consult the DESCRIPTION file for more details on required R packages. 
+
+# Installation
+
+Install dependent R packages
+
+```r
+install.packages(c("Seurat",'pheatmap','harmony','RobustRankAggreg','devtools'))
+```
+
+Install BioManager
+
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE))
+install.packages("BiocManager")
+BiocManager::install(version = "3.15")
+```
+
+Install dependent BioConductor packages
+
+```r
+BiocManager::install(c('BiocGenerics', 'DelayedArray', 'DelayedMatrixStats',
+                       'limma', 'lme4', 'S4Vectors', 'SingleCellExperiment',
+                       'SummarizedExperiment', 'batchelor', 'Matrix.utils',
+                       'HDF5Array', 'terra', 'ggrastr', 'SingleR', 'scran'))
+```
+
+Install monocle3
+
+```r
+devtools::install_github('cole-trapnell-lab/monocle3')
+```
+
+Install CellRef
+
+```r
+devtools::install_github('xu-lab/CellRef')
+```
+
+Test CellRef installation
+
+```r
+library(CellRef)
+```
