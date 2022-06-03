@@ -1,27 +1,28 @@
-#' Perform batch correction of single cell data
+#' Perform batch correction of single cell RNA-seq data
 #'
 #' This function loads a Seurat object that contains all data for batch correction and integration.
-#'  It assumes that the first column
-#' contains the rownames and the subsequent columns are the sample identifiers.
-#' Any rows with duplicated row names will be dropped with the first one being
-#' kepted.
+#' It will use the "RNA" assay to perform the data integration and assume that the "data" slot contains the normalized data.
+#' Currently, the function supports three single cell batch correction methods
+#' Monocle3-mnn: the mutual nearest neighbor matching based algorithm (Haghverdi et al., 2018) implemented in Monocle 3 (Cao et al., 2019)
+#' Seurat4-rpca: the reciprocal PCA based integration in Seurat 4 (Hao and Hao, et al., 2021)
+#' Harmony: the Harmony based integration (Korsunsky et al., 2019)
 #'
 #' @param object A Seurat object
 #' @param integration.batch a character string indicating the meta.data column that contains the batch for correction
 #' @param ident.var a character string indicating the meta.data column that contains the identities of each cell
 #' @param method the method used for batch correction
 #' @param npcs the number of principal components used for batch correction and umap projection
-#' @param vars.to.regression the covariates
-#' @param umap.min_dist
-#' @param umap.n_neighbors
-#' @param do.clustering
-#' @param clustering.method
-#' @param clustering.resolution
-#' @param rpca.normalization
-#' @param rpca.k.anchor
-#' @param rpca.k.weight
-#' @param rpca.prune_anchors
-#' @param verbose
+#' @param vars.to.regression Variables to regress out. For example, cell cycle (S.Score, G2M.Score) and mitochondrial percentage (pMT).
+#' @param umap.min_dist The effective minimum distance between embedded points, controlling how tightly the embedding is allowed to compress points together.
+#' @param umap.n_neighbors The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation
+#' @param do.clustering Whether to perform clustering analysis after batch correction
+#' @param clustering.method The clustering method
+#' @param clustering.resolution The resolution of graph-based clustering
+#' @param rpca.normalization The normalization method used in Seurat's RPCA pipeline
+#' @param rpca.k.anchor The k.anchor parameter used in Seurat's RPCA pipeline
+#' @param rpca.k.weight The k.weight parameter used in Seurat's RPCA pipeline
+#' @param rpca.prune_anchors When performing RPCA based integration, whether to prune anchors connecting cells of different identities. Need to set the ident.var parameter.
+#' @param verbose Whether to show verbose output
 #' @return A Seurat object
 #' @export
 doDataIntegration <- function(object, integration.batch, ident.var=NULL, method=c("Monocle3-mnn","Seurat4-rpca", "Harmony"),
@@ -326,21 +327,21 @@ doDataIntegration_harmony <- function(object, integration.batch, ident.var=NULL,
 #' Identify candidate cell clusters for each cell type defined in the dictionary
 #'
 #' @param object A Seurat object
-#' @param ctd a data.frame object that contains the cell type dictionary
-#' @param cluster.var a character string indicating the meta.data column that contains cluster assignment of each cell
-#' @param exp.thresh
-#' @param use.scale.exp
-#' @param score.thresh
-#' @param seed.n.min
-#' @param seed.n.max
-#' @param group.size.min
-#' @param precision.thresh
-#' @param recall.thresh
-#' @param verbose
+#' @param ctd A data.frame object that contains the cell type dictionary. The data frame should contain at least three columns: CellType, Marker, and MarkerType (p - positive markers; n - negative markers).
+#' @param cluster.var The name of meta.data column that contains cluster assignment of each cell. By default, "integrated_clusters".
+#' @param expr.thresh A marker gene is expressed in a cell if its expression value >expr.thresh. By default, 0.
+#' @param use.scaled.expr If TRUE, use the scaled expression in the "scale.data" slot; otherwise, use the expression in the "data" slot. By default, TRUE.
+#' @param score.thresh Cells with aggregated rank scores >=score.thresh will be excluded.
+#' @param seed.n.min Minimum number of seed cells for a cell type
+#' @param seed.n.max Maximum number of seed cells for a cell type
+#' @param group.size.min Minimum size of a cell cluster to be included in the candidate cell cluster identification
+#' @param precision.thresh Precision threshold for determining candidate cell clusters
+#' @param recall.thresh Recall threshold for determining candidate cell clusters
+#' @param verbose Whether to show verbose output
 #' @return a data.frame containing the mapping of candidate cell clusters and cell types
 #' @export
 findCandidateClusters <- function(object, ctd, cluster.var="integrated_clusters",
-                                  exp.thresh = 0, use.scaled.exp=T,
+                                  expr.thresh = 0, use.scaled.expr=T,
                                   score.thresh=0.1, seed.n.min=5, seed.n.max=Inf,
                                   group.size.min=10, precision.thresh=0.05, recall.thresh=0.2, verbose=T) {
   # TODO input validation
@@ -387,20 +388,20 @@ findCandidateClusters <- function(object, ctd, cluster.var="integrated_clusters"
 
         # positive marker expression
         i.x = NULL
-        if (use.scaled.exp==T) {
+        if (use.scaled.expr==T) {
           i.x = as.matrix(object@assays$RNA@scale.data[i.markers[i.markers.p, "Marker"], i.candidates])
         } else {
           i.x = as.matrix(object@assays$RNA@data[i.markers[i.markers.p, "Marker"], i.candidates])
         }
 
-        i.x = i.x[, which(colSums(i.x>exp.thresh)>1)]
+        i.x = i.x[, which(colSums(i.x>expr.thresh)>1)]
 
         i.cells = c()
         i.list <- list()
         for (j in 1:dim(i.x)[1]) {
           i.j.cells = NULL
           i.j.cells <- i.x[j,]
-          i.j.cells <- i.j.cells[i.j.cells > exp.thresh]
+          i.j.cells <- i.j.cells[i.j.cells > expr.thresh]
           if(length(i.j.cells) > 0) {
             i.j.cells <- sort(i.j.cells, decreasing=T)
             i.list[[as.character(rownames(i.x)[j])]] <- names(i.j.cells)
@@ -486,22 +487,20 @@ findCandidateClusters <- function(object, ctd, cluster.var="integrated_clusters"
 #' Seed cell identification
 #'
 #' @param object A Seurat object
-#' @param ctd a data.frame object that contains the cell type dictionary for seed cell identification.
-#' @param candidate.clusters a data.frame that contains the mapping between candidate cell clusters and cell types in the dictionary
-#' @param cluster.var a character string indicating the meta.data column that contains cluster assignment of each cell
-#' @param exp.thresh the number of principal components used for batch correction and umap projection
-#' @param use.scaled.exp the covariates
-#' @param score.thresh
-#' @param seed.n.min
-#' @param seed.n.max
-#' @param verbose
-#' @return A Seurat object of the identified seed cells
+#' @param ctd A data.frame object that contains the cell type dictionary. The data frame should contain at least three columns: CellType, Marker, and MarkerType (p - positive markers; n - negative markers).
+#' @param candidate.clusters A data.frame that contains the mapping between candidate cell clusters and cell types.
+#' @param cluster.var The name of meta.data column that contains cluster assignment of each cell. By default, "integrated_clusters".
+#' @param expr.thresh A marker gene is expressed in a cell if its expression value >expr.thresh. By default, 0.
+#' @param use.scaled.expr If TRUE, use the scaled expression in the "scale.data" slot; otherwise, use the expression in the "data" slot. By default, TRUE.
+#' @param score.thresh Cells with aggregated rank scores >=score.thresh will be excluded.
+#' @param seed.n.min Minimum number of seed cells for a cell type
+#' @param seed.n.max Maximum number of seed cells for a cell type
+#' @param verbose Whether to show verbose output
+#' @return A Seurat object containing the identified seed cells
 #' @export
-# ctd: CellType, Marker, MarkerType
-# candidate_clusters: Cluster, Type
 findSeedCells <- function(object, ctd, candidate.clusters,
                           cluster.var="integrated_clusters",
-                          exp.thresh = 0, use.scaled.exp=T,  score.thresh=Inf,
+                          expr.thresh = 0, use.scaled.expr=T,  score.thresh=Inf,
                           seed.n.min=5, seed.n.max=200, verbose=T) {
   #TODO input validation
 
@@ -566,21 +565,21 @@ findSeedCells <- function(object, ctd, candidate.clusters,
       if (length(i.candidates)>=seed.n.min) {
 
         i.x = NULL
-        if (use.scaled.exp==T) {
+        if (use.scaled.expr==T) {
           i.x = as.matrix(object@assays$RNA@scale.data[i.markers[i.markers.p, "Marker"], i.candidates])
         } else {
           i.x = as.matrix(object@assays$RNA@data[i.markers[i.markers.p, "Marker"], i.candidates])
         }
 
         # cells with at least two markers
-        i.x = i.x[, which(colSums(i.x>exp.thresh)>1)]
+        i.x = i.x[, which(colSums(i.x>expr.thresh)>1)]
 
         i.cells = c()
         i.list <- list()
         for (j in 1:dim(i.x)[1]) {
           i.j.cells = NULL
           i.j.cells <- i.x[j,]
-          i.j.cells <- i.j.cells[i.j.cells > exp.thresh]
+          i.j.cells <- i.j.cells[i.j.cells > expr.thresh]
           if(length(i.j.cells) > 0) {
             i.j.cells <- sort(i.j.cells, decreasing=T)
             i.list[[as.character(rownames(i.x)[j])]] <- names(i.j.cells)
@@ -835,15 +834,16 @@ annotateCells_SingleR <- function(ref, query, query.batch=NULL, reference.ident=
 
 #' Build a CellRef using the initial data integration and the seed cells
 #'
-#' @param object.all the Seurat object that contains all data for CellRef construction after batch correction
-#' @param object.seed the Seurat object that contains the identified seed cells.
+#' @param object.all A Seurat object that contains all data for CellRef construction after batch correction
+#' @param object.seed The Seurat object that contains the identified seed cells. The object should have run UMAP project and have stored the UMAP model.
 #' @param mapping.batch a character string indicating the meta.data column that contains data batch information to perform mapping to the seed cells
+#' @param integration.batch the name of the meta.data column that contains the batch information of CellRef cells for correction using Seurat's RPCA method.
 #' @param integration.npcs the number of principal components
-#' @param rpca.prune_anchors
-#' @param purity.pruning
-#' @param purity.nn.k
-#' @param purity.thresh
-#' @param verbose
+#' @param rpca.prune_anchors In Seurat's RPCA integration, whether to prune anchors connecting cells of different identities.
+#' @param purity.pruning Whether to prune cells based on kN purity
+#' @param purity.nn.k The number of neighbors used in the kNN purity calculation
+#' @param purity.thresh The threshold for kNN purity score
+#' @param verbose Whether to show verbose output
 #' @return A Seurat object
 #' @export
 buildCellRef <- function(object.all, object.seed,

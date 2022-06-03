@@ -8,8 +8,8 @@ findCandidateClusters(
   object,
   ctd,
   cluster.var = "integrated_clusters",
-  exp.thresh = 0,
-  use.scaled.exp = T,
+  expr.thresh = 0,
+  use.scaled.expr = T,
   score.thresh = 0.1,
   seed.n.min = 5,
   seed.n.max = Inf,
@@ -22,9 +22,27 @@ findCandidateClusters(
 \arguments{
 \item{object}{A Seurat object}
 
-\item{ctd}{a data.frame object that contains the cell type dictionary}
+\item{ctd}{A data.frame object that contains the cell type dictionary. The data frame should contain at least three columns: CellType, Marker, and MarkerType (p - positive markers; n - negative markers).}
 
-\item{cluster.var}{a character string indicating the meta.data column that contains cluster assignment of each cell}
+\item{cluster.var}{The name of meta.data column that contains cluster assignment of each cell. By default, "integrated_clusters".}
+
+\item{expr.thresh}{A marker gene is expressed in a cell if its expression value >expr.thresh. By default, 0.}
+
+\item{use.scaled.expr}{If TRUE, use the scaled expression in the "scale.data" slot; otherwise, use the expression in the "data" slot. By default, TRUE.}
+
+\item{score.thresh}{Cells with aggregated rank scores >=score.thresh will be excluded.}
+
+\item{seed.n.min}{Minimum number of seed cells for a cell type}
+
+\item{seed.n.max}{Maximum number of seed cells for a cell type}
+
+\item{group.size.min}{Minimum size of a cell cluster to be included in the candidate cell cluster identification}
+
+\item{precision.thresh}{Precision threshold for determining candidate cell clusters}
+
+\item{recall.thresh}{Recall threshold for determining candidate cell clusters}
+
+\item{verbose}{Whether to show verbose output}
 }
 \value{
 a data.frame containing the mapping of candidate cell clusters and cell types

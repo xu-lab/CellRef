@@ -2,7 +2,7 @@
 % Please edit documentation in R/CellRef_functions.R
 \name{doDataIntegration}
 \alias{doDataIntegration}
-\title{Perform batch correction of single cell data}
+\title{Perform batch correction of single cell RNA-seq data}
 \usage{
 doDataIntegration(
   object,
@@ -35,15 +35,36 @@ doDataIntegration(
 
 \item{npcs}{the number of principal components used for batch correction and umap projection}
 
-\item{vars.to.regression}{the covariates}
+\item{umap.min_dist}{The effective minimum distance between embedded points, controlling how tightly the embedding is allowed to compress points together.}
+
+\item{umap.n_neighbors}{The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation}
+
+\item{do.clustering}{Whether to perform clustering analysis after batch correction}
+
+\item{clustering.method}{The clustering method}
+
+\item{clustering.resolution}{The resolution of graph-based clustering}
+
+\item{rpca.normalization}{The normalization method used in Seurat's RPCA pipeline}
+
+\item{rpca.k.anchor}{The k.anchor parameter used in Seurat's RPCA pipeline}
+
+\item{rpca.k.weight}{The k.weight parameter used in Seurat's RPCA pipeline}
+
+\item{rpca.prune_anchors}{When performing RPCA based integration, whether to prune anchors connecting cells of different identities. Need to set the ident.var parameter.}
+
+\item{verbose}{Whether to show verbose output}
+
+\item{vars.to.regression}{Variables to regress out. For example, cell cycle (S.Score, G2M.Score) and mitochondrial percentage (pMT).}
 }
 \value{
 A Seurat object
 }
 \description{
 This function loads a Seurat object that contains all data for batch correction and integration.
- It assumes that the first column
-contains the rownames and the subsequent columns are the sample identifiers.
-Any rows with duplicated row names will be dropped with the first one being
-kepted.
+It will use the "RNA" assay to perform the data integration and assume that the "data" slot contains the normalized data.
+Currently, the function supports three single cell batch correction methods
+Monocle3-mnn: the mutual nearest neighbor matching based algorithm (Haghverdi et al., 2018) implemented in Monocle 3 (Cao et al., 2019)
+Seurat4-rpca: the reciprocal PCA based integration in Seurat 4 (Hao and Hao, et al., 2021)
+Harmony: the Harmony based integration (Korsunsky et al., 2019)
 }

@@ -9,8 +9,8 @@ findSeedCells(
   ctd,
   candidate.clusters,
   cluster.var = "integrated_clusters",
-  exp.thresh = 0,
-  use.scaled.exp = T,
+  expr.thresh = 0,
+  use.scaled.expr = T,
   score.thresh = Inf,
   seed.n.min = 5,
   seed.n.max = 200,
@@ -20,18 +20,26 @@ findSeedCells(
 \arguments{
 \item{object}{A Seurat object}
 
-\item{ctd}{a data.frame object that contains the cell type dictionary for seed cell identification.}
+\item{ctd}{A data.frame object that contains the cell type dictionary. The data frame should contain at least three columns: CellType, Marker, and MarkerType (p - positive markers; n - negative markers).}
 
-\item{candidate.clusters}{a data.frame that contains the mapping between candidate cell clusters and cell types in the dictionary}
+\item{candidate.clusters}{A data.frame that contains the mapping between candidate cell clusters and cell types.}
 
-\item{cluster.var}{a character string indicating the meta.data column that contains cluster assignment of each cell}
+\item{cluster.var}{The name of meta.data column that contains cluster assignment of each cell. By default, "integrated_clusters".}
 
-\item{exp.thresh}{the number of principal components used for batch correction and umap projection}
+\item{expr.thresh}{A marker gene is expressed in a cell if its expression value >expr.thresh. By default, 0.}
 
-\item{use.scaled.exp}{the covariates}
+\item{use.scaled.expr}{If TRUE, use the scaled expression in the "scale.data" slot; otherwise, use the expression in the "data" slot. By default, TRUE.}
+
+\item{score.thresh}{Cells with aggregated rank scores >=score.thresh will be excluded.}
+
+\item{seed.n.min}{Minimum number of seed cells for a cell type}
+
+\item{seed.n.max}{Maximum number of seed cells for a cell type}
+
+\item{verbose}{Whether to show verbose output}
 }
 \value{
-A Seurat object of the identified seed cells
+A Seurat object containing the identified seed cells
 }
 \description{
 Seed cell identification

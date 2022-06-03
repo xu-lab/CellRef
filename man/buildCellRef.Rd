@@ -18,13 +18,25 @@ buildCellRef(
 )
 }
 \arguments{
-\item{object.all}{the Seurat object that contains all data for CellRef construction after batch correction}
+\item{object.all}{A Seurat object that contains all data for CellRef construction after batch correction}
 
-\item{object.seed}{the Seurat object that contains the identified seed cells.}
+\item{object.seed}{The Seurat object that contains the identified seed cells. The object should have run UMAP project and have stored the UMAP model.}
 
 \item{mapping.batch}{a character string indicating the meta.data column that contains data batch information to perform mapping to the seed cells}
 
+\item{integration.batch}{the name of the meta.data column that contains the batch information of CellRef cells for correction using Seurat's RPCA method.}
+
 \item{integration.npcs}{the number of principal components}
+
+\item{rpca.prune_anchors}{In Seurat's RPCA integration, whether to prune anchors connecting cells of different identities.}
+
+\item{purity.pruning}{Whether to prune cells based on kN purity}
+
+\item{purity.nn.k}{The number of neighbors used in the kNN purity calculation}
+
+\item{purity.thresh}{The threshold for kNN purity score}
+
+\item{verbose}{Whether to show verbose output}
 }
 \value{
 A Seurat object

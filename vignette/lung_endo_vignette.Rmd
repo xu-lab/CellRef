@@ -22,7 +22,6 @@ knitr::opts_chunk$set(
 In this vignette, we demonstrate the guided CellRef construction pipeline using a subset of our collected human lung scRNA-seq data, which contains 21,971 human lung endothelial cells predicted in three studies (Adams et al., Sci. Adv. 2020, Habermann et al., Sci. Adv. 2020, Travaglini et al., Nature 2020). The runtime of this demo is about 30 minutes.
 
 ```{r packages}
-#source("https://raw.githubusercontent.com/xu-lab/CellRef/main/R/CellRef_functions.R")
 library(CellRef)
 library(Seurat)
 library(monocle3)
@@ -89,7 +88,7 @@ candidate_clusters = findCandidateClusters(obj, ctd, verbose = F)
 candidate_clusters
 ```
 
-We suggest double checking and curating the identified candidate cell clusters using expression of marker genes. For example, using dotplot, we can validate that SVEC and VEC markers both selectively expressed in cluster 6, consistent with candidate cell cluster results. Based on cell clusters in the UMAP and expression of CAP1 and CAP2 markers, we can add cluster 3 for CAP1 and cluster 7 for CAP2.  
+We suggest double checking and curating the identified candidate cell clusters using expression of marker genes. For example, using dotplot, we can validate that SVEC and VEC markers both selectively expressed in cluster 5, consistent with candidate cell cluster results. Based on cell clusters in the UMAP and expression of CAP1 and CAP2 markers, we can add cluster 8 for CAP1 and cluster 6 for CAP2.  
 ```{r, fig.width=10, fig.height=4.5}
 g1 = DimPlot(obj, reduction="umap",
              group.by="integrated_clusters", label=T)
@@ -105,10 +104,10 @@ g = g + theme(axis.text.y = element_text(face="italic"),
 
 g1 + g
 
-# Based marker exprssion and umap of cell clusters, we can curate the candidate cell clusters, e.g., adding cluster 3 for CAP1 and cluster 7 for CAP2.
+# Based marker exprssion and umap of cell clusters, we can curate the candidate cell clusters, e.g., adding cluster 8 for CAP1 and cluster 6 for CAP2.
 candidate_clusters <- rbind(candidate_clusters,
-                            c(3, "CAP1"),
-                            c(7, "CAP2"))
+                            c(8, "CAP1"),
+                            c(6, "CAP2"))
 
 ```
 
@@ -122,7 +121,7 @@ obj_seed = findSeedCells(obj, ctd, candidate_clusters,
                          verbose = F)
 ```
 
-Let's visualize the identified seed cells in the original UMAP. The seed cells of the same cell type are close to each other and separate from seed cells of other cell types. We can see the clear separation of the seed cells of SVEC and VEC within cluster 6.
+Let's visualize the identified seed cells in the original UMAP. The seed cells of the same cell type are close to each other and separate from seed cells of other cell types. We can see the clear separation of the seed cells of SVEC and VEC within cluster 5.
 ```{r, warning=FALSE, message=FALSE, fig.width=7, fig.height=3.2}
 obj1 = obj
 obj1@meta.data$Seed = " "
