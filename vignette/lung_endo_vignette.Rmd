@@ -1,13 +1,12 @@
 ---
-title: Demonstration of the guided CellRef construction using human lung endothelial
-  data
+title: Demonstration of the guided CellRef construction using human lung endothelial data
 author: "Minzhe Guo"
 date: 'Compiled: `r Sys.Date()`'
 output:
-  pdf_document: default
   html_document:
     theme: united
     df_print: kable
+  pdf_document: default
 ---
 
 ```{r setup, include = FALSE}
@@ -20,12 +19,25 @@ knitr::opts_chunk$set(
 )
 ```
 
-In this vignette, we demonstrate the guided CellRef construction pipeline using a subset of our collected human lung scRNA-seq data, which contains 21,971 human lung endothelial cells predicted in three studies (Adams et al., Sci. Adv. 2020, Habermann et al., Sci. Adv. 2020, Travaglini et al., Nature 2020)
+In this vignette, we demonstrate the guided CellRef construction pipeline using a subset of our collected human lung scRNA-seq data, which contains 21,971 human lung endothelial cells predicted in three studies (Adams et al., Sci. Adv. 2020, Habermann et al., Sci. Adv. 2020, Travaglini et al., Nature 2020). The runtime of this demo is about 30 minutes.
 
 ```{r packages}
-source("https://raw.githubusercontent.com/xu-lab/CellRef/main/R/CellRef_functions.R")
+#source("https://raw.githubusercontent.com/xu-lab/CellRef/main/R/CellRef_functions.R")
+library(CellRef)
+library(Seurat)
+library(monocle3)
+library(SingleR)
+library(SingleCellExperiment)
+library(harmony)
+library(RobustRankAggreg)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(pheatmap)
 
 options(future.globals.maxSize = 1280000 * 1024^2)
+
+start = Sys.time()
 ```
 
 Currently, we utilize Seurat (v4) object as main data structure for storage and computation. First, let's create a Seurat object using the UMI count matrix and cell information of the demo data, which can be downloaded from here: [lung_endo.counts](https://github.com/xu-lab/CellRef/raw/main/data/lung_endo.counts.rds) and [lung_endo.cells](https://github.com/xu-lab/CellRef/raw/main/data/lung_endo.cells.rds).
@@ -34,15 +46,15 @@ Currently, we utilize Seurat (v4) object as main data structure for storage and 
 counts = readRDS(file="./lung_endo.counts.rds")
 cells = readRDS(file="./lung_endo.cells.rds")
 
-obj <- CreateSeuratObject(counts=counts, 
-                          project="lung_endo_demo", 
+obj <- CreateSeuratObject(counts=counts,
+                          project="lung_endo_demo",
                           meta.data=cells)
 obj <- NormalizeData(obj)
 
 print(obj)
 ```
 
-Download the CellRef cell type dictionary for lung endothelial cells from [here] (https://github.com/xu-lab/CellRef/raw/main/data/Lung_endothelial_ctd.rds) and load the dictionary into R. We assume that the dictionary is a data.frame that contains at least three columns: CellType, Marker, and MarkType (p - positive marker, n - negative marker).
+Download the CellRef [cell type dictionary for lung endothelial cells](https://github.com/xu-lab/CellRef/raw/main/data/Lung_endothelial_ctd.rds) and load the dictionary into R. We assume that the dictionary is a data.frame that contains at least three columns: CellType, Marker, and MarkType (p - positive marker, n - negative marker).
 
 ```{r, warning=FALSE, message=FALSE}
 ctd = readRDS(file="./lung_endothelial_ctd.rds")
@@ -50,26 +62,26 @@ ctd = readRDS(file="./lung_endothelial_ctd.rds")
 print(ctd)
 ```
 
-Step 1: batch correction. By default, we used the mutual nearest matching (MNN, Haghverdi et al., 2018) in Monocle 3 (Cao et al., Nature 2019). Alternative options include: 'Seurat4-rpca' - Seurat4's reciprocal PCA based integration (Hao and Hao et al., 2021) and 'Harmony' (Korsunsky et al., Nature Methods 2019). 
+Step 1: batch correction. By default, we used the mutual nearest matching (MNN, Haghverdi et al., 2018) in Monocle 3 (Cao et al., Nature 2019). Alternative options include: 'Seurat4-rpca' - Seurat4's reciprocal PCA based integration (Hao and Hao et al., 2021) and 'Harmony' (Korsunsky et al., Nature Methods 2019).
 
 By setting "do.clustering=T", we also identified cell clusters after batch correction. By default, the clusters will be stored in a meta.data column named "integrated_clusters"
 
 ```{r batch_correction, warning=FALSE, message=FALSE, fig.width=10, fig.height=4.5}
 # batch correction of data from different donors
-obj = doDataIntegration(obj, integration.batch ="DonorID", 
-                        method="Monocle3-mnn", 
+obj = doDataIntegration(obj, integration.batch ="DonorID",
+                        method="Monocle3-mnn",
                         npcs=200, do.clustering = T)
 
-g1 = DimPlot(obj, reduction="umap", 
+g1 = DimPlot(obj, reduction="umap",
              group.by="integrated_clusters", label=T)
-g2 = DimPlot(obj, reduction="umap", 
+g2 = DimPlot(obj, reduction="umap",
              group.by="DonorID", label=F)
 g2 = g2 + theme(legend.text = element_text(size=8))
 g1+g2
 
 ```
 
-Step2: candidate cell clusters. Using the integrated data and cell clusters, we identify the candidate cell clusters for each cell type in the dictionary. 
+Step2: candidate cell clusters. Using the integrated data and cell clusters, we identify the candidate cell clusters for each cell type in the dictionary.
 
 ```{r  candiate_clusters, warning=FALSE, message=FALSE}
 candidate_clusters = findCandidateClusters(obj, ctd, verbose = F)
@@ -79,23 +91,23 @@ candidate_clusters
 
 We suggest double checking and curating the identified candidate cell clusters using expression of marker genes. For example, using dotplot, we can validate that SVEC and VEC markers both selectively expressed in cluster 6, consistent with candidate cell cluster results. Based on cell clusters in the UMAP and expression of CAP1 and CAP2 markers, we can add cluster 3 for CAP1 and cluster 7 for CAP2.  
 ```{r, fig.width=10, fig.height=4.5}
-g1 = DimPlot(obj, reduction="umap", 
+g1 = DimPlot(obj, reduction="umap",
              group.by="integrated_clusters", label=T)
 
-g = DotPlot(obj, assay="RNA", 
+g = DotPlot(obj, assay="RNA",
             features = unique(as.character(ctd$Marker)),
-            dot.min = 0.05, 
+            dot.min = 0.05,
             group.by="integrated_clusters")
-g = g + coord_flip() 
-g = g + theme(axis.text.y = element_text(face="italic"), 
-              legend.title  = element_text(size=10), 
+g = g + coord_flip()
+g = g + theme(axis.text.y = element_text(face="italic"),
+              legend.title  = element_text(size=10),
               legend.text  = element_text(size=10))
 
 g1 + g
 
 # Based marker exprssion and umap of cell clusters, we can curate the candidate cell clusters, e.g., adding cluster 3 for CAP1 and cluster 7 for CAP2.
-candidate_clusters <- rbind(candidate_clusters, 
-                            c(3, "CAP1"), 
+candidate_clusters <- rbind(candidate_clusters,
+                            c(3, "CAP1"),
                             c(7, "CAP2"))
 
 ```
@@ -103,9 +115,9 @@ candidate_clusters <- rbind(candidate_clusters,
 Step 3: using the cell type dictionary and the candidate cell clusters, we used marker based single cell ranking to identify seed cells for each cell type.
 ```{r seed_cell, warning=FALSE, message=FALSE}
 
-obj_seed = findSeedCells(obj, ctd, candidate_clusters, 
+obj_seed = findSeedCells(obj, ctd, candidate_clusters,
                          exp.thresh = 0, use.scaled.exp=T,  
-                         score.thresh=Inf, 
+                         score.thresh=Inf,
                          seed.n.min=5, seed.n.max=200,
                          verbose = F)
 ```
@@ -116,11 +128,11 @@ obj1 = obj
 obj1@meta.data$Seed = " "
 obj1@meta.data[rownames(obj_seed@meta.data),"Seed"]=as.character(obj_seed@meta.data$Seed)
 
-g = DimPlot(obj1, reduction = "umap", group.by="Seed", 
+g = DimPlot(obj1, reduction = "umap", group.by="Seed",
             label = T, order=T, label.size=4,
             cols=c("grey90", scales::hue_pal()(6)))
-g1 = DimPlot(obj, reduction="umap", 
-             group.by="integrated_clusters", 
+g1 = DimPlot(obj, reduction="umap",
+             group.by="integrated_clusters",
              label=T)
 
 g + g1
@@ -129,22 +141,22 @@ g + g1
 
 The seed cells will be used for automated cell type identification. To prepare for this, we integrated seed cells from different studies using Seurat's RPCA pipeline. UMAP visualization shows the separation of seed cells of different cell types.
 ```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=4.5}
-obj_seed_rpca = doDataIntegration(obj_seed, 
-                                  integration.batch="Dataset", 
-                                  method="Seurat4-rpca", npcs=200, 
-                                  do.clustering  = F, 
-                                  rpca.prune_anchors=F, 
+obj_seed_rpca = doDataIntegration(obj_seed,
+                                  integration.batch="Dataset",
+                                  method="Seurat4-rpca", npcs=200,
+                                  do.clustering  = F,
+                                  rpca.prune_anchors=F,
                                   verbose=F)
 
-g1 = DimPlot(obj_seed_rpca, reduction = "umap", pt.size=0.001, 
+g1 = DimPlot(obj_seed_rpca, reduction = "umap", pt.size=0.001,
              group.by="Seed", label=T)
 
-g = DotPlot(obj_seed_rpca, assay = "RNA", 
-            features = unique(as.character(ctd$Marker)), 
+g = DotPlot(obj_seed_rpca, assay = "RNA",
+            features = unique(as.character(ctd$Marker)),
             dot.min = 0.05, group.by="Seed")
-g = g + coord_flip() 
-g = g + theme(axis.text.y = element_text(face="italic"), 
-              legend.title  = element_text(size=10), 
+g = g + coord_flip()
+g = g + theme(axis.text.y = element_text(face="italic"),
+              legend.title  = element_text(size=10),
               legend.text  = element_text(size=10))
 
 g1 + g
@@ -157,15 +169,15 @@ obj.cellref = buildCellRef(obj, obj_seed_rpca, verbose=F)
 
 Let's visualize the CellRef in UMAP and evaluate cell identities in the CellRef using expression of marker genes.
 ```{r, fig.width=10, fig.height=4.5}
-g1 = DimPlot(obj.cellref, reduction = "umap", 
+g1 = DimPlot(obj.cellref, reduction = "umap",
              group.by="cellref.celltype", label=T)
 
-g = DotPlot(obj.cellref, assay="RNA", 
-            features = unique(as.character(ctd$Marker)), 
+g = DotPlot(obj.cellref, assay="RNA",
+            features = unique(as.character(ctd$Marker)),
             dot.min = 0.05, group.by="cellref.celltype")
-g = g + coord_flip() 
-g = g + theme(axis.text.y = element_text(face="italic"), 
-              legend.title  = element_text(size=10), 
+g = g + coord_flip()
+g = g + theme(axis.text.y = element_text(face="italic"),
+              legend.title  = element_text(size=10),
               legend.text  = element_text(size=10))
 
 g1 + g
@@ -176,16 +188,16 @@ Create pseudo-bulk profiles for each cell type using gene expression in the seed
 ```{r, fig.width=6, fig.height=5.5}
 
 seed.avg = AverageExpression(obj_seed, assay="RNA",
-                             group.by="Seed", 
+                             group.by="Seed",
                              return.seurat = T)
 seed.avg = FindVariableFeatures(seed.avg, nfeatures = 2000)
 
-cellref.avg = AverageExpression(obj.cellref, assay="RNA", 
+cellref.avg = AverageExpression(obj.cellref, assay="RNA",
                                 group.by="cellref.celltype",
                                 return.seurat = T)
 cellref.avg = FindVariableFeatures(cellref.avg, nfeatures = 2000)
 
-hvg.common = union(seed.avg@assays$RNA@var.features, 
+hvg.common = union(seed.avg@assays$RNA@var.features,
                    cellref.avg@assays$RNA@var.features)
 
 seed.avg = ScaleData(seed.avg, features = hvg.common)
@@ -201,7 +213,12 @@ tmp = cbind(seed.data, cellref.data[rownames(seed.data), ])
 tmp = cor(tmp)
 
 pheatmap::pheatmap(tmp, clustering_method = "complete")
-  
+```
+
+Execution time of this demo:
+```{r}
+end = Sys.time()
+print(end-start)
 ```
 
 Finally, save the CellRef seed and CellRef objects.

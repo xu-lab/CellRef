@@ -1,0 +1,24 @@
+Package: CellRef
+Type: Package
+Title: This package provides functions to implement the guided single cell reference (CellRef) construction pipeline. 
+Version: 0.0.0.9000
+Author: Minzhe Guo
+Maintainer: Minzhe Guo <minzhe.guo@cchmc.org>
+Description: This pipeline implements the CellRef (single cell reference) construction with the guidance of a cell type dictionary. It contains four main steps: (1) batch correction, (2) candidate cell cluster identification, (3) seed cells identification, and consesus prediciton.
+License: MIT license
+Encoding: UTF-8
+LazyData: true
+Imports: 
+  Seurat,
+  monocle3,
+  batchelor,
+  SingleCellExperiment,
+  scran,
+  SingleR,
+  RobustRankAggreg,
+  ggplot2,
+  reshape2,
+  pheatmap,
+  dplyr,
+  harmony
+
