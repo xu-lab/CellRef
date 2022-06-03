@@ -14,7 +14,7 @@ Web interfaces to LungMAP CellRefs:
 
 # Vignette: 
 
-- Demonstration of Guided CellRef construction using scRNA-seq of human lung endothelial cells [lung_endo_vignette](vignette/lung_endo_vignette.pdf)
+- Demonstration of Guided CellRef construction using scRNA-seq of human lung endothelial cells [lung_endo_vignette](vignette/lung_endo_vignette.html)
 
 # System requirements 
 

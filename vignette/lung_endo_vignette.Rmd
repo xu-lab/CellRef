@@ -3,10 +3,10 @@ title: Demonstration of the guided CellRef construction using human lung endothe
 author: "Minzhe Guo"
 date: 'Compiled: `r Sys.Date()`'
 output:
+  pdf_document: default
   html_document:
     theme: united
     df_print: kable
-  pdf_document: default
 ---
 
 ```{r setup, include = FALSE}
@@ -88,7 +88,8 @@ candidate_clusters = findCandidateClusters(obj, ctd, verbose = F)
 candidate_clusters
 ```
 
-We suggest double checking and curating the identified candidate cell clusters using expression of marker genes. For example, using dotplot, we can validate that SVEC and VEC markers both selectively expressed in cluster 5, consistent with candidate cell cluster results. Based on cell clusters in the UMAP and expression of CAP1 and CAP2 markers, we can add cluster 8 for CAP1 and cluster 6 for CAP2.  
+We suggest double checking and curating the identified candidate cell clusters using expression of marker genes. For example, using dotplot, we can validate that SVEC and VEC markers both selectively expressed in cluster 5, consistent with candidate cell cluster results. Based on cell clusters in the UMAP and expression of CAP1 and CAP2 markers, we can add cluster 8 for CAP1 and cluster 6 for CAP2.
+
 ```{r, fig.width=10, fig.height=4.5}
 g1 = DimPlot(obj, reduction="umap",
              group.by="integrated_clusters", label=T)
@@ -112,16 +113,17 @@ candidate_clusters <- rbind(candidate_clusters,
 ```
 
 Step 3: using the cell type dictionary and the candidate cell clusters, we used marker based single cell ranking to identify seed cells for each cell type.
+
 ```{r seed_cell, warning=FALSE, message=FALSE}
 
 obj_seed = findSeedCells(obj, ctd, candidate_clusters,
-                         exp.thresh = 0, use.scaled.exp=T,  
                          score.thresh=Inf,
                          seed.n.min=5, seed.n.max=200,
                          verbose = F)
 ```
 
 Let's visualize the identified seed cells in the original UMAP. The seed cells of the same cell type are close to each other and separate from seed cells of other cell types. We can see the clear separation of the seed cells of SVEC and VEC within cluster 5.
+
 ```{r, warning=FALSE, message=FALSE, fig.width=7, fig.height=3.2}
 obj1 = obj
 obj1@meta.data$Seed = " "
@@ -139,6 +141,7 @@ g + g1
 ```
 
 The seed cells will be used for automated cell type identification. To prepare for this, we integrated seed cells from different studies using Seurat's RPCA pipeline. UMAP visualization shows the separation of seed cells of different cell types.
+
 ```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=4.5}
 obj_seed_rpca = doDataIntegration(obj_seed,
                                   integration.batch="Dataset",
@@ -161,12 +164,14 @@ g = g + theme(axis.text.y = element_text(face="italic"),
 g1 + g
 ```
 
-Step 4. Now, we are ready to construct the CellRef. We mapped all other cells to the seed cells using Seurat's label transfer and SingleR. The CellRef will be comprised of the seed cells and cells with consistent cell type predictions by both methods and with kNN purity socre >=0.6 (means at least 60% of the nearest neighbors of a cell have the same cell type prediction)
+Step 4. Now, we are ready to construct the CellRef. We mapped all other cells to the seed cells using Seurat's label transfer and SingleR. The CellRef will be comprised of the seed cells and cells with consistent cell type predictions by both methods and with kNN purity socre \>=0.6 (means at least 60% of the nearest neighbors of a cell have the same cell type prediction)
+
 ```{r buid_cellref, warning=FALSE, message=FALSE}
 obj.cellref = buildCellRef(obj, obj_seed_rpca, verbose=F)
 ```
 
 Let's visualize the CellRef in UMAP and evaluate cell identities in the CellRef using expression of marker genes.
+
 ```{r, fig.width=10, fig.height=4.5}
 g1 = DimPlot(obj.cellref, reduction = "umap",
              group.by="cellref.celltype", label=T)
@@ -182,8 +187,8 @@ g = g + theme(axis.text.y = element_text(face="italic"),
 g1 + g
 ```
 
-
 Create pseudo-bulk profiles for each cell type using gene expression in the seed and the cellref cells and perform hierarchical clustering analysis.
+
 ```{r, fig.width=6, fig.height=5.5}
 
 seed.avg = AverageExpression(obj_seed, assay="RNA",
@@ -215,12 +220,14 @@ pheatmap::pheatmap(tmp, clustering_method = "complete")
 ```
 
 Execution time of this demo:
+
 ```{r}
 end = Sys.time()
 print(end-start)
 ```
 
 Finally, save the CellRef seed and CellRef objects.
+
 ```{r, eval=FALSE}
 # NOT RUN
 save(obj_seed_rpca, file="lung_endo.cellref_seed.rds")
@@ -228,8 +235,15 @@ save(obj.cellref, file="lung_endo.cellref.rds")
 ```
 
 <details open>
-  <summary>**Session Info**</summary>
+
+<summary>
+
+**Session Info**
+
+</summary>
+
 ```{r}
 sessionInfo()
 ```
+
 </details>
