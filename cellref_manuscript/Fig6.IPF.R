@@ -43,40 +43,14 @@ ipf@meta.data$predicted.celltype_level.score = mapped@meta.data[rownames(ipf@met
 
 
 # Final Plots -------------------------------------------------------------
-# Color Scale
-createColorPanel <- function(num.color){
-  colPanel = c(
-    "#E31A1C", "#FFD700", "#771122", "#777711", "#1F78B4", "#68228B", "#AAAA44",
-    "#60CC52", "#771155", "#DDDD77", "#774411", "#AA7744", "#AA4455", "#117744",
-    "#000080", "#44AA77", "#AA4488", "#DDAA77", "#D9D9D9", "#BC80BD", "#FFED6F",
-    "#7FC97F", "#BEAED4", "#FDC086", "#FFFF99", "#386CB0", "#F0027F", "#BF5B17",
-    "#666666", "#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02",
-    "#A6761D", "#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C",
-    "#FDBF6F", "#FF7F00", "#CAB2D6", "#6A3D9A", "#B15928", "#FBB4AE", "#B3CDE3",
-    "#CCEBC5", "#DECBE4", "#FED9A6", "#FFFFCC", "#E5D8BD", "#FDDAEC", "#F2F2F2",
-    "#B3E2CD", "#FDCDAC", "#CBD5E8", "#F4CAE4", "#E6F5C9", "#FFF2AE", "#F1E2CC",
-    "#CCCCCC", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FFFF33", "#A65628",
-    "#F781BF", "#999999", "#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854",
-    "#FFD92F", "#E5C494", "#B3B3B3", "#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072",
-    "#80B1D3", "#FDB462", "#B3DE69", "#FCCDE5"
-  )
-  if(num.color > length(colPanel)){
-    colPanel = c(colPanel, colVector(num.color - length(colPanel)));
-  }else{
-    colPanel = colPanel[1:num.color];
-  }
-  return(colPanel)
-}
-sub.colors <- c("magenta", createColorPanel(50))
-
-g1 = DimPlot(ipf, reduction = 'umap', group.by = 'predicted.celltype_level', label = F, repel = T, pt.size = 0.001, label.size = 3,cols = sub.colors) + ggtitle('CellRef Seed Annotation')+ theme(legend.text = element_text(size=15))
+g1 = DimPlot(ipf, reduction = 'umap', group.by = 'predicted.celltype_level', label = F, repel = T, pt.size = 0.001, label.size = 3) + ggtitle('CellRef Seed Annotation')+ theme(legend.text = element_text(size=15))
 ggsave('./Figure_6E.tiff', dpi = 600, units = 'in', compression = 'lzw', height = 8, width = 12)
 
 # Prediction Score Featureplots
 FeaturePlot(ipf, reduction = "umap", features = "predicted.celltype_level.score",pt.size = 0.1, order = F) + 
   scale_colour_gradient2(low = 'red',mid = 'grey85', high = "grey85", midpoint = mean(ipf$predicted.celltype_level.score)- sd(ipf$predicted.celltype_level.score))+
   ggtitle('Prediction Score')
-ggsave('./Figure_6F.tiff', dpi = 600, units = 'in', compression = 'lzw', height = 8, width = 8.5)
+ggsave('./Figure_6F.tiff', dpi = 600, units = 'in', compression = 'lzw', height = 7.5, width = 8.5)
 
 
 g = ipf@meta.data %>% ggplot(aes(x=celltype, y=predicted.celltype_level.score, fill=celltype)) + geom_boxplot(outlier.shape = NA) 
