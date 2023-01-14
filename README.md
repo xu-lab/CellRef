@@ -15,7 +15,7 @@ Web interfaces to LungMAP CellRefs:
 # Vignette: 
 
 - Demonstration of Guided CellRef construction using scRNA-seq of human lung endothelial cells [lung_endo_vignette](vignette/lung_endo_vignette.pdf)
-- Demonstration of automated cell type annotation using CellRef and validation of the annotation [cellref_annotation_demo](vignette/cellref_annotation_demo.pdf)
+- Demonstration of automated cell type annotation using CellRef [cellref_annotation_demo](vignette/cellref_annotation_demo.pdf)
 
 # System requirements 
 
@@ -26,7 +26,7 @@ CellRef has been tested on R versions >= 4.1 on Windows 10 64bit and macOS (Mont
 Install dependent R packages
 
 ```r
-install.packages(c("Seurat",'pheatmap','harmony','RobustRankAggreg','devtools'))
+install.packages(c("Seurat",'pheatmap','harmony','RobustRankAggreg','devtools','writexl','readxl','qpdf','ggpubr','gprofiler2'))
 ```
 
 Install BioManager
