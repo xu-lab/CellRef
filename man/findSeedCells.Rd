@@ -22,7 +22,7 @@ findSeedCells(
 
 \item{ctd}{A data.frame object that contains the cell type dictionary. The data frame should contain at least three columns: CellType, Marker, and MarkerType (p - positive markers; n - negative markers).}
 
-\item{candidate.clusters}{A data.frame that contains the mapping between candidate cell clusters and cell types.}
+\item{candidate.clusters}{A data.frame that contains the mapping between candidate cell clusters and cell types. Column names should be "Cluster and "CellType".}
 
 \item{cluster.var}{The name of meta.data column that contains cluster assignment of each cell. By default, "integrated_clusters".}
 

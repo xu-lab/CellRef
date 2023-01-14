@@ -16,6 +16,10 @@ Web interfaces to LungMAP CellRefs:
 
 - Demonstration of Guided CellRef construction using scRNA-seq of human lung endothelial cells [lung_endo_vignette](vignette/lung_endo_vignette.pdf)
 
+# Vignette: 
+
+- Code to reproduce the results in the CellRef manuscript is in the folder [cellref_manuscript](cellref_manuscript)
+
 # System requirements 
 
 CellRef has been tested on R versions >= 4.1 on Windows 10 64bit and macOS (Monterey) platforms. Please consult the DESCRIPTION file for more details on required R packages. 

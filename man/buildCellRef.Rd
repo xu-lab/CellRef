@@ -2,7 +2,7 @@
 % Please edit documentation in R/CellRef_functions.R
 \name{buildCellRef}
 \alias{buildCellRef}
-\title{Build a CellRef using the initial data integration and the seed cells}
+\title{Build a CellRef using the initial data integration and the identified seed cells}
 \usage{
 buildCellRef(
   object.all,
@@ -30,7 +30,7 @@ buildCellRef(
 
 \item{rpca.prune_anchors}{In Seurat's RPCA integration, whether to prune anchors connecting cells of different identities.}
 
-\item{purity.pruning}{Whether to prune cells based on kN purity}
+\item{purity.pruning}{Whether to prune cells based on kNN purity}
 
 \item{purity.nn.k}{The number of neighbors used in the kNN purity calculation}
 
@@ -42,5 +42,5 @@ buildCellRef(
 A Seurat object
 }
 \description{
-Build a CellRef using the initial data integration and the seed cells
+Build a CellRef using the initial data integration and the identified seed cells
 }
