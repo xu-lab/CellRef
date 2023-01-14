@@ -1,0 +1,130 @@
+---
+html_document:
+  theme: united
+author: "Minzhe Guo"
+date: 'Compiled: `r Sys.Date()`'
+output:
+  html_document:
+    df_print: paged
+title: "Demonstration of cell type annotation using CellRef"
+df_print: kable
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  tidy = TRUE,
+  tidy.opts = list(width.cutoff = 95),
+  message = FALSE,
+  warning = FALSE,
+  time_it = TRUE
+)
+```
+
+```{r packages}
+library(Seurat)
+library(SeuratDisk)
+library(ggplot2)
+library(patchwork)
+library(CellRef)
+library(monocle3)
+library(pheatmap)
+```
+
+First, let's create a Seurat object using the UMI count matrix (lung_endo.counts.rds) and cell information (lung_endo.cells.rds) of the demo data, which can be downloaded from the data folder of this CellRef github.
+
+```{r load_data, warning=FALSE, message=FALSE}
+cells = readRDS(file="./lung_endo.cells.rds")
+counts = readRDS(file="./lung_endo.counts.rds")
+query = CreateSeuratObject(counts=counts, meta.data = cells)
+query = NormalizeData(query)
+
+# batch correction of data from different donors
+query = doDataIntegration(query, integration.batch ="DonorID",
+                        method="Monocle3-mnn",
+                        npcs=200, do.clustering = T)
+
+# after integration, the method also perform clustering using leiden algorithm
+g1 = DimPlot(query, reduction="umap",
+             group.by="integrated_clusters", label=T)
+g2 = DimPlot(query, reduction="umap",
+             group.by="DonorID", label=F)
+g2 = g2 + theme(legend.text = element_text(size=8))
+g1+g2
+```
+
+Next, we use LungMAP Human Lung CellRef to annotate the cells in the Seurat object that we just created
+
+```{r annotate, warning=FALSE, message=FALSE, fig.width=10, fig.height=4.5}
+ref_ident = "celltype_level3"
+
+ref = readRDS(file="./LungMAP_HumanLung_CellRef_Seed.v1.rds")
+
+refmap.anchors <- FindTransferAnchors(
+    reference = ref,
+    query = query,
+    normalization.method = "SCT",
+    reference.reduction = "pca",
+    dims = 1:dim(ref@reductions$pca@cell.embeddings)[2]
+)
+
+mapped <- MapQuery(anchorset = refmap.anchors, 
+                   reference = ref, query = query,
+                     refdata = list(cellref_celltype = ref_ident), 
+					 reference.reduction = "pca", reduction.model = "umap")
+
+```
+
+We can prune the predictions with low confidence. By default, we use the mean-sd as the cutoff of prediction scores.
+
+```{r }
+
+score.mean = mean(mapped@meta.data$predicted.cellref_celltype.score)
+score.sd = sd(mapped@meta.data$predicted.cellref_celltype.score)
+score.cutoff = score.mean - score.sd
+
+# We can see that while several non-Endo cell type were predicted, 
+# they were all have very low confidence, 
+# and will be pruned by our default cutoff (red) of the prediction score
+g = ggplot(mapped@meta.data, aes(x=predicted.cellref_celltype, 
+                                 y=predicted.cellref_celltype.score, 
+                                 fill=predicted.cellref_celltype)) 
+g = g + geom_boxplot(outlier.shape = NA)
+g = g + geom_hline(yintercept = score.mean, color="black")
+g = g + geom_hline(yintercept = score.cutoff, color="red")
+g = g + theme_bw()
+g = g + theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1))
+g
+
+# pruned the predictions lower than the cutoff of prediction score
+mapped@meta.data$predicted.cellref_celltype.pruned = as.character(mapped@meta.data$predicted.cellref_celltype)
+mapped@meta.data$predicted.cellref_celltype.pruned[which(mapped@meta.data$predicted.cellref_celltype.score<score.cutoff)] = "pruned"
+```
+
+UMAP visualization of the cell clusters and CellRef annotations
+
+```{r }
+
+mapped.pruned = subset(mapped, predicted.cellref_celltype.pruned != "pruned")
+
+g1 = DimPlot(mapped, reduction="umap",
+             group.by="integrated_clusters", label=T)
+g2 = DimPlot(mapped.pruned, reduction="umap",
+             group.by="predicted.cellref_celltype.pruned", label=T)
+g2 = g2 + theme(legend.text = element_text(size=8))
+g1+g2
+
+```
+
+<details open>
+
+<summary>
+
+**Session Info**
+
+</summary>
+
+```{r}
+sessionInfo()
+```
+
+</details>
