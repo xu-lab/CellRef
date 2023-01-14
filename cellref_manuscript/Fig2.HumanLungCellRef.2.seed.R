@@ -11,9 +11,7 @@ library(BiocNeighbors)
 
 options(future.globals.maxSize = 1280000 * 1024^2)
 
-source("../CellRef_functions.R")
-
-# load the mnn based data integration,
+# load the MNN based data integration,
 # the "Cluster" column in the metadata contains Leiden based cell clustering
 obj = readRDS(file=".Data/mnn.rds")
 
