@@ -45,7 +45,7 @@ findCandidateClusters(
 \item{verbose}{Whether to show verbose output}
 }
 \value{
-a data.frame containing the mapping of candidate cell clusters and cell types
+a data.frame containing the mapping of candidate cell clusters (Cluster) and cell types (CellType).
 }
 \description{
 Identify candidate cell clusters for each cell type defined in the dictionary

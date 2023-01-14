@@ -7,16 +7,19 @@
 #' Seurat4-rpca: the reciprocal PCA based integration in Seurat 4 (Hao and Hao, et al., 2021)
 #' Harmony: the Harmony based integration (Korsunsky et al., 2019)
 #'
+#' For large data integration tasks, we suggest running the integration in a cluster environment.
+#' For example, the data integration for LungMAP Human Lung CellRef was performed in a linux cluster.
+#'
 #' @param object A Seurat object
-#' @param integration.batch a character string indicating the meta.data column that contains the batch for correction
-#' @param ident.var a character string indicating the meta.data column that contains the identities of each cell
-#' @param method the method used for batch correction
-#' @param npcs the number of principal components used for batch correction and umap projection
+#' @param integration.batch a character string indicating the meta.data column that contains the data batch for correction
+#' @param ident.var a character string indicating the meta.data column that contains the identities of each cell if available
+#' @param method the method that will be used for single cell batch correction
+#' @param npcs the number of reduced dimensions used for batch correction and umap projection
 #' @param vars.to.regression Variables to regress out. For example, cell cycle (S.Score, G2M.Score) and mitochondrial percentage (pMT).
 #' @param umap.min_dist The effective minimum distance between embedded points, controlling how tightly the embedding is allowed to compress points together.
 #' @param umap.n_neighbors The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation
 #' @param do.clustering Whether to perform clustering analysis after batch correction
-#' @param clustering.method The clustering method
+#' @param clustering.method The clustering method. Default is leiden algorithm.
 #' @param clustering.resolution The resolution of graph-based clustering
 #' @param rpca.normalization The normalization method used in Seurat's RPCA pipeline
 #' @param rpca.k.anchor The k.anchor parameter used in Seurat's RPCA pipeline
@@ -338,7 +341,7 @@ doDataIntegration_harmony <- function(object, integration.batch, ident.var=NULL,
 #' @param precision.thresh Precision threshold for determining candidate cell clusters
 #' @param recall.thresh Recall threshold for determining candidate cell clusters
 #' @param verbose Whether to show verbose output
-#' @return a data.frame containing the mapping of candidate cell clusters and cell types
+#' @return a data.frame containing the mapping of candidate cell clusters (Cluster) and cell types (CellType).
 #' @export
 findCandidateClusters <- function(object, ctd, cluster.var="integrated_clusters",
                                   expr.thresh = 0, use.scaled.expr=T,
@@ -488,7 +491,7 @@ findCandidateClusters <- function(object, ctd, cluster.var="integrated_clusters"
 #'
 #' @param object A Seurat object
 #' @param ctd A data.frame object that contains the cell type dictionary. The data frame should contain at least three columns: CellType, Marker, and MarkerType (p - positive markers; n - negative markers).
-#' @param candidate.clusters A data.frame that contains the mapping between candidate cell clusters and cell types.
+#' @param candidate.clusters A data.frame that contains the mapping between candidate cell clusters and cell types. Column names should be "Cluster and "CellType".
 #' @param cluster.var The name of meta.data column that contains cluster assignment of each cell. By default, "integrated_clusters".
 #' @param expr.thresh A marker gene is expressed in a cell if its expression value >expr.thresh. By default, 0.
 #' @param use.scaled.expr If TRUE, use the scaled expression in the "scale.data" slot; otherwise, use the expression in the "data" slot. By default, TRUE.
@@ -832,7 +835,7 @@ annotateCells_SingleR <- function(ref, query, query.batch=NULL, reference.ident=
 
 }
 
-#' Build a CellRef using the initial data integration and the seed cells
+#' Build a CellRef using the initial data integration and the identified seed cells
 #'
 #' @param object.all A Seurat object that contains all data for CellRef construction after batch correction
 #' @param object.seed The Seurat object that contains the identified seed cells. The object should have run UMAP project and have stored the UMAP model.
@@ -840,7 +843,7 @@ annotateCells_SingleR <- function(ref, query, query.batch=NULL, reference.ident=
 #' @param integration.batch the name of the meta.data column that contains the batch information of CellRef cells for correction using Seurat's RPCA method.
 #' @param integration.npcs the number of principal components
 #' @param rpca.prune_anchors In Seurat's RPCA integration, whether to prune anchors connecting cells of different identities.
-#' @param purity.pruning Whether to prune cells based on kN purity
+#' @param purity.pruning Whether to prune cells based on kNN purity
 #' @param purity.nn.k The number of neighbors used in the kNN purity calculation
 #' @param purity.thresh The threshold for kNN purity score
 #' @param verbose Whether to show verbose output
@@ -951,4 +954,283 @@ buildCellRef <- function(object.all, object.seed,
   }
 
   return(object)
+}
+
+
+#' CellRef validation of automated cell type annotation
+#'
+#' This function loads a Seurat object with cell type annotations predicted by CellRef or CellRef seed.
+#' It will produce a PDF, containing UMAP visualization of cells colored by the CellRef predicted cell types,
+#' differential expression of CellRef markers in the predictions, dotplot visualization of expression of CellRef marker genes,
+#' identification of differentially expressed genes (DEGs) in the predicted cell types,
+#' heatmap visualization of DEGs, and most enriched KEGG pathways and Gene Ontology Biological Processes enriched by the DEGs.
+#'
+#' @param obj A Seurat object
+#' @param markers A data frame that contains marker(column name: 'Marker') and cell type(column name: 'CellType') information,
+#' @param ident.use A character string indicating the meta.data column that contains the identities of each cell
+#' @param umap.width Width of output UMAP
+#' @param umap.height Height of output UMAP
+#' @param log.thresh The threshold of Log Fold Change when finding the expression of CellRef marker genes for given ident.use
+#' @param min.pct The min frequency to find the expression of CellRef marker genes for given ident.use
+#' @param min.cells.group The smallest number of cells for a cell type in your annotation
+#' @param dotplot.height Height of output dotplot
+#' @param dotplot.width Width of output dotplot
+#' @param vlnplt.height Height of output violin plot
+#' @param Vlnplt.width Width of output violin plot
+#' @param fullsigs.log.thrsh The threshold of log.FC when finding full signature genes for given ident.use
+#' @param fullsigs.min.pct The min frequency to find full signature genes for given ident
+#' @param heatmap.height Height of output heatmap
+#' @param heatmap.width Width of output heatmap
+#' @param heatmap_n Number of DEGs per cell type in the heatmap
+#' @param dotchart.height Height of dotchart
+#' @param dotchart.width Width of dotchart
+#' @param enrich.height Height of enrichment analysis plots
+#' @param enrich.width Width of enrichment analysis plots
+#' @return A PDF file and multiple data frames.
+#' @export
+#'
+evaluatePrediction = function(obj,
+                         markers,
+                         ident.use,
+                         umap.width = 10,
+                         umap.height = 7,
+                         log.thresh = log2(1.5),
+                         min.pct = 0.2,
+                         min.cells.group = 3,
+                         dotplot.height = 13,
+                         dotplot.width = 9,
+                         vlnplt.height = 5,
+                         vlnplt.width = 3,
+                         fullsigs.log.thrsh = log2(1.5),
+                         fullsigs.min.pct = 0.2,
+                         heatmap.height = 10,
+                         heatmap.width = 16,
+                         heatmap_n = 50,
+                         dotchart.height = 10,
+                         dotchart.width = 16,
+                         enrich.height = 6,
+                         enrich.width = 8){
+
+  #detect ident.use in meta.data
+  if(!ident.use %in% colnames(obj@meta.data)){
+    stop(paste0("Did not find <", ident.use, "> in object's meta data!"))
+  }
+
+  Idents(obj) = obj@meta.data[,ident.use]
+  DefaultAssay(obj) = 'RNA'
+
+  obj.celltypes = names(table(Idents(obj)))
+  marker.celltypes = names(table(markers$CellType))
+
+  #detect obj and marker consistency
+  if (all(obj.celltypes %in% marker.celltypes) == F) {
+    stop(paste0("The following cell types are inconsistent with marker table's cell type: ", obj.celltypes[!obj.celltypes %in% marker.celltypes]))
+  }
+
+  #UMAP: UMAP of the cell type predictions
+  if(T){
+    cat('Generating UMAP')
+    umap_label = DimPlot(obj, reduction = "umap", group.by=ident.use, label=T, label.size=2, repel=T) + ggtitle('UMAP of Predicted Cell Types')
+    ggsave(filename = "UMAP.tiff", width=umap.width, height=umap.height, dpi=300, units="in", compression="lzw")
+  }
+  # Dotplot : Get markers that remain DE in the predcited cell types
+  if(T){
+    cat('Generating dotplot')
+    targets = names(table(Idents(obj)))
+    tmp = markers
+
+    df1 = data.frame(row.names = targets)
+    df2 = data.frame(row.names = targets)
+
+    for (x in 1:length(targets)) {
+      tmp.markers = subset(tmp, CellType == targets[x])
+      tmp.markers = tmp.markers$Marker
+      tmp.markers = intersect(rownames(obj), tmp.markers)
+
+      de = FindMarkers(obj,ident.1 = targets[x], assay = 'RNA',only.pos = T, logfc.threshold = log.thresh ,min.pct = min.pct,features = tmp.markers, min.cells.group = min.cells.group)
+      de = subset(de, p_val<0.05)
+      de$gene = rownames(de)
+      de$cluster = targets[x]
+
+      df1 = rbind(df1, de)
+      write.table(df1, paste0('geneList.markers.remained.selective.txt'), sep = '\t', row.names = T)
+
+      pct = length(de$gene) / length(tmp.markers)
+      df2[targets[x], 'Selective.Percentage'] = pct
+      write.table(df2, paste0('pct.markers.remained.selective.txt'), sep = '\t', row.names = T)
+    }
+
+    genes = df1$gene
+    genes = genes[which(!duplicated(genes))]
+    obj@meta.data[,ident.use] = factor(obj@meta.data[,ident.use], levels = targets)
+
+    dotplot = DotPlot(obj, assay="RNA", features=rev(genes),  group.by= ident.use,
+                      dot.min=0.01, cols=c("grey90",rgb(146,0,0,maxColorValue = 255)))  + coord_flip()
+    dotplot = dotplot + theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1), axis.text.y=element_text(face="italic"), axis.title.y = element_blank(),
+                              axis.title.x = element_blank(), panel.border = element_rect(color="black")) + NoLegend() + ggtitle('Markers that Remained Selective in Testing Data')
+    ggsave(filename = paste0("dotplot.markers.remained.selective.tiff"), height = dotplot.height, width = dotplot.width, dpi = 300)
+  }
+
+  # Figure 5F: Percentage of genes remained selective in prediction
+  if(T){
+    cat('Generating violin plot')
+    df = df2
+    df$Selective.Percentage = round(df$Selective.Percentage*100,2)
+    df$DataID = 'DataID'
+    errbar_lims <- group_by(df, DataID) %>%
+      summarize(mean=mean(Selective.Percentage), se=sd(Selective.Percentage)/sqrt(n()),
+                upper=mean+se, lower=mean-se)
+
+    vlnplt = ggplot() + geom_violin(data=df, aes(x=DataID, y=Selective.Percentage, fill=DataID),scale='width', width=0.8, trim = T) +
+      geom_point(data=errbar_lims, aes(x=DataID, y=mean), size=3) +
+      geom_errorbar(aes(x=errbar_lims$DataID, ymax=errbar_lims$upper,
+                        ymin=errbar_lims$lower), stat='identity', width=.15)
+
+    vlnplt = vlnplt + theme_bw()
+    vlnplt = vlnplt + theme(panel.grid = element_blank())
+    vlnplt = vlnplt + scale_fill_manual(values=c('grey'))
+    vlnplt = vlnplt + labs(x = '', y= '% of marker genes of a cell type')
+    vlnplt = vlnplt + theme(axis.text.x = element_blank(), axis.text.y = element_text(size = 17, color =  'black'), axis.text.y.right = element_blank(), axis.title = element_text(size = 17, color = 'black'))
+    vlnplt = vlnplt + coord_cartesian(ylim = c(0, 105))
+    vlnplt = vlnplt + scale_y_continuous(breaks = seq(0, 100, 10)) + ggtitle('Summary of Percentage of Markers Remained Selective')
+    ggsave('vlnplot.markers.remained.selective.tiff', width = vlnplt.width, height = vlnplt.height, units = 'in', compression='lzw', dpi =600)
+  }
+
+  # Figure 5G: Heatmap of DEGs for cell types in object
+  if(T){
+    cat('Generating heatmap...')
+    sigs = FindAllMarkers(obj, logfc.threshold = fullsigs.log.thrsh, test.use = "wilcox", only.pos = T, min.pct = fullsigs.min.pct)
+    sigs = sigs[order(sigs$cluster, -sigs$avg_log2FC), ]
+    sigs1 = subset(sigs, p_val<0.05 & p_val_adj<0.1 & avg_log2FC >= log2(1.5) & pct.1>=0.2)
+    write.table(sigs1, 'full.DEGs.txt', row.names = F)
+
+    top50sigs <- sigs1 %>% group_by(cluster) %>% top_n(n = heatmap_n, wt = avg_log2FC)
+    obj.avg <- ScaleData(obj,features = top50sigs$gene)
+    obj.avg = AverageExpression(obj,return.seurat = T)
+    hm = DoHeatmap(obj.avg, features = top50sigs$gene,draw.lines = F)+ theme(axis.text.y = element_blank()) + ggtitle(paste0('Heatmap of Top', heatmap_n, ' DEGs for Each Predicted Cell Type'))
+    ggsave(filename = paste0("heatmap.top.DEGs.tiff"), height = heatmap.height ,width = heatmap.width,dpi = 300, compression = 'lzw')
+  }
+
+  # Figure 5H: Number of the DEGs for each cell type
+  if(T){
+    cat('Generating dotchart...')
+    viz = data.frame(table(sigs1$cluster))
+    viz = viz[order(viz$Var1, decreasing=T), ]
+    viz$Var1 = factor(viz$Var1)
+    dotchar = ggdotchart(viz, x = "Var1", y = "Freq",
+                         color = "Var1",                                # Color by groups
+                         sorting = "descending",                       # Sort value in descending order
+                         add = "segments",                             # Add segments from y = 0 to dots
+                         rotate = TRUE,                                # Rotate vertically
+                         #group = "cyl",                                # Order by groups
+                         dot.size = 3,                                 # Large dot size
+                         label = round(viz$Freq,2),                        # Add mpg values as dot labels
+                         font.label = list(color = "white", size = 0,
+                                           vjust = 1),               # Adjust label parameters
+                         ggtheme = theme_pubr()                        # ggplot2 theme
+    )  + NoLegend()
+    dotchar = dotchar + ylab("Number of genes") + xlab("celltype") + ggtitle('DEG Counts for Predicted Cell Type') # + geom_hline(yintercept = 50, color="blue")
+    ggsave(filename = "count.full.DEGs.tiff", width=dotchart.width, height=dotchart.height, dpi=100, units="in", compression="lzw")
+  }
+
+  # Figure 5I: Functional enrichment analysis of cell type signature genes
+  if (T) {
+    cat('Performing enrichment analysis')
+    sigs1 = read.table('full.DEGs.txt',header = T)
+    top500sig <- sigs1 %>% group_by(cluster) %>% top_n(n = 500, wt = avg_log2FC) %>% data.frame()
+    write.table(top500sig, file=paste0("top500.celltype.",DefaultAssay(obj),".sigs.txt"), sep="\t", col.names = T, row.names = F, quote=F)
+
+    targets = names(table(Idents(obj)))
+
+    dir.create(paste0(getwd(), '/enrich/'))
+    kegg.list = list()
+    gobp.list = list()
+
+    for (i in 1:length(targets)){
+      cell = targets[i]
+      if (grepl("/", cell, fixed=TRUE)){
+        cell.dir = gsub("/", ".", cell)
+      } else {
+        cell.dir = cell
+      }
+      cell.sigs <- subset(top500sig,cluster == cell)
+      gostres <- gost(query = cell.sigs$gene,
+                      organism = "hsapiens", ordered_query = FALSE,
+                      multi_query = FALSE, significant = TRUE, exclude_iea = FALSE,
+                      measure_underrepresentation = FALSE, evcodes = TRUE,
+                      user_threshold = 0.05, correction_method = "g_SCS",
+                      domain_scope = "annotated", custom_bg = NULL,
+                      numeric_ns = "", sources = NULL, as_short_link = FALSE)
+      enrich <- gostres$result
+      names(enrich)[1] <- "cell"
+      enrich$cell <- cell
+      names(enrich)[16] <- "genes"
+
+      ##enrichment plot
+      enrich.kegg <- subset(enrich,source == "KEGG", intersection_size > 3)
+      if (nrow(enrich.kegg)>=10){
+        enrich.kegg.top10 <- enrich.kegg[1:10,]
+      } else {
+        enrich.kegg.top10 <- enrich.kegg
+      }
+
+      enrich.kegg.top10$term_name <- factor(enrich.kegg.top10$term_name,levels = rev(enrich.kegg.top10$term_name))
+      p1 <- ggplot(enrich.kegg.top10, aes(x = intersection_size, y = term_name)) + geom_bar(stat = "identity",aes(fill = -log10(p_value))) + scale_fill_gradientn("-log10(p-val)",colours = c("blue","red")) +theme_bw()+theme(axis.text.x = element_text(size = 12),axis.title=element_text(size=12),axis.text.y =element_text(size = 12),panel.border = element_rect(colour = "black", fill=NA, size=1)) +xlab("Count") + ylab("")
+      p1 = p1 + ggtitle(paste0('KEGG Enrichment Analysis for Predicted <' , cell, '>'))
+      kegg.list[[cell]] = p1
+
+      enrich.bp <- subset(enrich,source == "GO:BP", intersection_size > 3)
+      if (nrow(enrich.bp)>=10){
+        enrich.bp.top10 <- enrich.bp[1:10,]
+      } else {
+        enrich.bp.top10 <- enrich.bp
+      }
+
+      enrich.bp.top10$term_name <- factor(enrich.bp.top10$term_name,levels = rev(enrich.bp.top10$term_name))
+      p2 <- ggplot(enrich.bp.top10, aes(x = intersection_size, y = term_name)) + geom_bar(stat = "identity",aes(fill = -log10(p_value))) + scale_fill_gradientn("-log10(p-val)",colours = c("blue","red")) +theme_bw()+theme(axis.text.x = element_text(size = 12),axis.title=element_text(size=12),axis.text.y =element_text(size = 12),panel.border = element_rect(colour = "black", fill=NA, size=1)) +xlab("Count") + ylab("")
+      p2 = p2 + ggtitle(paste0('GO:BP Enrichment Analysis for Predicted <' , cell, '>'))
+      gobp.list[[cell]] = p2
+
+      if (file.exists(paste0(getwd(),'/enrich/',cell.dir))){
+        cell0 = gsub("/", ".", cell)
+        write_xlsx(enrich,paste0(getwd(),'/enrich/',cell.dir,"/",cell0,".enrichment.result.xlsx"))
+        ggsave(filename = paste0(getwd(),'/enrich/',cell.dir,"/",cell0,".enrichment.top10.kegg.tiff"),plot = p1,height = enrich.height, width = enrich.width, dpi = 300)
+        ggsave(filename = paste0(getwd(),'/enrich/',cell.dir,"/",cell0,".enrichment.top10.GOBP.tiff"),plot = p2,height = enrich.height, width = enrich.width, dpi = 300)
+
+      } else {
+        dir.create(paste0(getwd(),'/enrich/',cell.dir))
+        cell0 = gsub("/", ".", cell)
+        write_xlsx(enrich,paste0(getwd(),'/enrich/',cell.dir,"/",cell0,".enrichment.result.xlsx"))
+        ggsave(filename = paste0(getwd(),'/enrich/',cell.dir,"/",cell0,".enrichment.top10.kegg.tiff"),plot = p1,height = enrich.height, width = enrich.width, dpi = 300)
+        ggsave(filename = paste0(getwd(),'/enrich/',cell.dir,"/",cell0,".enrichment.top10.GOBP.tiff"),plot = p2,height = enrich.height, width = enrich.width, dpi = 300)
+      }
+    }
+  }
+
+
+  #output PDF file
+  dir.create('plots_pdf')
+  pdf(file = "plots_pdf/1.umap.pdf", width = umap.width, height = umap.height)
+  plot(umap_label)
+  dev.off()
+  pdf(file = 'plots_pdf/2.dotplot.pdf', width = dotplot.width, height = dotplot.height)
+  plot(dotplot)
+  dev.off()
+  pdf(file = 'plots_pdf/3.violinplot.pdf', width = vlnplt.width, height = vlnplt.height)
+  plot(vlnplt)
+  dev.off()
+  pdf(file = 'plots_pdf/4.heatmap.pdf', width = heatmap.width,height = heatmap.height)
+  plot(hm)
+  dev.off()
+  pdf(file = 'plots_pdf/5.dotchart.pdf', width = dotchart.width, height = dotchart.height)
+  plot(dotchar)
+  dev.off()
+
+  pdf(file = 'plots_pdf/6.enrich.pdf', width = enrich.width, height = enrich.height)
+  for (i in 1:length(kegg.list)){
+    grid.arrange(kegg.list[[i]], gobp.list[[i]] , ncol = 1)
+  }
+  dev.off()
+
+  pdf_combine(input = paste0('plots_pdf/',list.files('plots_pdf')), output = 'AIO.pdf')
 }

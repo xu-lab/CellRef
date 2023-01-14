@@ -27,13 +27,13 @@ doDataIntegration(
 \arguments{
 \item{object}{A Seurat object}
 
-\item{integration.batch}{a character string indicating the meta.data column that contains the batch for correction}
+\item{integration.batch}{a character string indicating the meta.data column that contains the data batch for correction}
 
-\item{ident.var}{a character string indicating the meta.data column that contains the identities of each cell}
+\item{ident.var}{a character string indicating the meta.data column that contains the identities of each cell if available}
 
-\item{method}{the method used for batch correction}
+\item{method}{the method that will be used for single cell batch correction}
 
-\item{npcs}{the number of principal components used for batch correction and umap projection}
+\item{npcs}{the number of reduced dimensions used for batch correction and umap projection}
 
 \item{umap.min_dist}{The effective minimum distance between embedded points, controlling how tightly the embedding is allowed to compress points together.}
 
@@ -41,7 +41,7 @@ doDataIntegration(
 
 \item{do.clustering}{Whether to perform clustering analysis after batch correction}
 
-\item{clustering.method}{The clustering method}
+\item{clustering.method}{The clustering method. Default is leiden algorithm.}
 
 \item{clustering.resolution}{The resolution of graph-based clustering}
 
@@ -67,4 +67,8 @@ Currently, the function supports three single cell batch correction methods
 Monocle3-mnn: the mutual nearest neighbor matching based algorithm (Haghverdi et al., 2018) implemented in Monocle 3 (Cao et al., 2019)
 Seurat4-rpca: the reciprocal PCA based integration in Seurat 4 (Hao and Hao, et al., 2021)
 Harmony: the Harmony based integration (Korsunsky et al., 2019)
+}
+\details{
+For large data integration tasks, we suggest running the integration in a cluster environment.
+For example, the data integration for LungMAP Human Lung CellRef was performed in a linux cluster.
 }
