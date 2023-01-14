@@ -1,9 +1,10 @@
+# code to reproduce the MNN based data integration for LungMAP Human Lung CellRef construction
+
 library(Seurat)
 library(monocle3)
 library(SingleR)
-library(SingleCellExperiment)
+library(CellRef)
 library(harmony)
-library(RobustRankAggreg)
 library(dplyr)
 library(reshape2)
 library(ggplot2)
@@ -11,20 +12,13 @@ library(pheatmap)
 
 options(future.globals.maxSize = 1280000 * 1024^2)
 
-source("./CellRef_functions.R")
-
 obj = readRDS(file=".Data/full.object.rds")
-
-obj = subset(obj, Cohort != "GSE136831")
-obj@meta.data = droplevels(obj@meta.data)
 
 obj = NormalizeData(obj)
 obj = CellCycleScoring(obj, s.features = Seurat::cc.genes.updated.2019$s.genes, g2m.features = Seurat::cc.genes.updated.2019$g2m.genes)
 
+# MNN based batch correction of data from different donors
 
-print(obj)
-
-# batch correction of data from different donors
 obj = doDataIntegration(obj, integration.batch ="DonorID",
                         method="Monocle3-mnn",
                         npcs=200, umap.min_dist = 0.1,  do.clustering = T)
