@@ -17,9 +17,7 @@ obj = readRDS(file=".Data/full.object.rds")
 obj = NormalizeData(obj)
 obj = CellCycleScoring(obj, s.features = Seurat::cc.genes.updated.2019$s.genes, g2m.features = Seurat::cc.genes.updated.2019$g2m.genes)
 
-print(obj)
-
-# batch correction of data from different donors
+# MNN based batch correction of data from different donors
 obj = doDataIntegration(obj, integration.batch ="DonorID",
                         method="Monocle3-mnn",
                         npcs=200, umap.min_dist = 0.1,  do.clustering = T)
