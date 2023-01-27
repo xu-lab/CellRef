@@ -14,7 +14,7 @@ for (dataset in c("GSE161382","GSE171524", "GSE136831", "CCHMC_LungMAP", "EGAS00
                  "GSE135893", "GSE122960", "syn21041850", "GSE134174", "UPenn_LungMAP")) {
 
   if (dataset %in% c("GSE161382","GSE171524")) {
-    query = readRDS(file=paste0("../.Data/snRNA.", dataset, ".rds"))
+    query = readRDS(file=paste0(".Data/snRNA.", dataset, ".rds"))
 
   } else {
     query = subset(scRNA, Dataset==dataset)
