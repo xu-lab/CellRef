@@ -298,18 +298,18 @@ doDataIntegration_harmony <- function(object, integration.batch, ident.var=NULL,
     }
   }
 
-  DefaultAssay(obj) = "RNA"
+  DefaultAssay(object) = "RNA"
   object = NormalizeData(object)
-  object = FindVariableFeatures(obj)
+  object = FindVariableFeatures(object)
   object = ScaleData(object, vars.to.regress=vars.to.regress)
 
-  object = RunPCA(obj, npcs=npcs)
+  object = RunPCA(object, npcs=npcs)
 
   hmat = HarmonyMatrix(object@reductions$pca@cell.embeddings[, 1:npcs],
                        meta_data = object@meta.data, vars_use = integration.batch, do_pca = FALSE)
   object@reductions$harmony = CreateDimReducObject(embeddings = hmat, assay= DefaultAssay(object), key="harmony_")
-  object = RunUMAP(object, dims=1:npcs, reduction = "umap",
-                   reduction.name = "harmony", return.model = TRUE,
+  object = RunUMAP(object, dims=1:npcs, reduction = "harmony",
+                   reduction.name = "umap", return.model = TRUE,
                    min.dist=umap.min_dist, n.neighbors = umap.n_neighbors)
 
   if (do.clustering==TRUE) {
