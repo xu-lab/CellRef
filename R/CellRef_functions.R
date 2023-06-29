@@ -854,6 +854,7 @@ buildCellRef <- function(object.all, object.seed,
                          integration.batch="Dataset", integration.npcs=200,
                          rpca.prune_anchors=T,
                          purity.pruning=T, purity.nn.k=20, purity.thresh=0.6,
+                         vars.to.regress = c("S.Score","G2M.Score","pMT"),
                          verbose=T) {
   # TODO: add input validation
 
@@ -869,6 +870,7 @@ buildCellRef <- function(object.all, object.seed,
     message("Mapping all the cells to the seed cells using Seurat4's reference mapping algorithm")
   }
   pred_SingleR = annotateCells_SingleR(ref=object.seed, query=object.all, query.batch=mapping.batch,
+                                       vars.to.regress = vars.to.regress,
                                        verbose=F)
 
   # add SingleR predictions to the Seurat predictions
@@ -886,7 +888,7 @@ buildCellRef <- function(object.all, object.seed,
   pred_consensus$cellref.source = "consensus"
   pred_consensus[, cellref.ann.name] = as.character(pred_consensus$pred_RefMap)
 
-  cellref_cells = obj_seed@meta.data
+  cellref_cells = object.seed@meta.data
   cellref_cells$cellref.source = "Seed"
   cellref_cells[, cellref.ann.name] = as.character(cellref_cells$Seed)
   cellref_cells = rbind(cellref_cells[, c("cellref.source",cellref.ann.name)], pred_consensus[, c("cellref.source",cellref.ann.name)])
@@ -904,7 +906,7 @@ buildCellRef <- function(object.all, object.seed,
     message(paste("Integrate",dim(object@meta.data)[1], "cells using Seurat4's RPCA pipeline using SCT normalization"))
   }
   object = doDataIntegration(object, integration.batch=integration.batch, ident.var=cellref.ann.name, method="Seurat4-rpca",
-                             npcs=integration.npcs, rpca.prune_anchors = T,
+                             npcs=integration.npcs, rpca.prune_anchors = T, vars.to.regress = vars.to.regress,
                              do.clustering=FALSE, verbose=F)
 
   # kNN
@@ -949,6 +951,7 @@ buildCellRef <- function(object.all, object.seed,
     }
     object = doDataIntegration(object, integration.batch=integration.batch, ident.var=cellref.ann.name, method="Seurat4-rpca",
                                npcs=integration.npcs, rpca.prune_anchors = rpca.prune_anchors, do.clustering=FALSE,
+                               vars.to.regress = vars.to.regress,
                                verbose=F)
 
   }
