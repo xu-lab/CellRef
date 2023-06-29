@@ -48,7 +48,7 @@ for (dataset in c("GSE161382","GSE171524", "GSE136831", "CCHMC_LungMAP", "EGAS00
   mapped <- MapQuery(anchorset = anchors, reference = seed, query = query,
                      refdata = list(celltype = "celltype_level3"), reference.reduction = "pca", reduction.model = "umap")
 
-  saveRDS(query, file=paste0(dataset, ".mapped.rds"))
+  saveRDS(mapped, file=paste0(dataset, ".mapped.rds"))
 
 
   if (is.null(predictions_refmap)) {
