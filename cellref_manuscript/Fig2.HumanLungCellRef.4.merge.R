@@ -7,6 +7,9 @@ library(patchwork)
 
 options(future.globals.maxSize = 128000 * 1024^2) # for 50 Gb RAM
 
+meta.use = c("orig.ident","nCount_RNA","nFeature_RNA","Dataset","DonorID","DataID", 
+             "S.Score","G2M.Score","Phase","pMT","predicted.celltype","predicted.celltype.score","id")
+
 # load objects from Seurat refmap
 objlist = list()
 datasets = c("CCHMC_LungMAP", "EGAS00001004082", "GSE122960", "GSE134174", "GSE135893", "GSE136831", "UPenn_LungMAP", "syn21041850", "GSE161382", "GSE171524")
