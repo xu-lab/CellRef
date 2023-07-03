@@ -979,7 +979,7 @@ buildCellRef <- function(object.all, object.seed,
 #' @param dotplot.height Height of output dotplot
 #' @param dotplot.width Width of output dotplot
 #' @param vlnplt.height Height of output violin plot
-#' @param Vlnplt.width Width of output violin plot
+#' @param vlnplt.width Width of output violin plot
 #' @param fullsigs.log.thrsh The threshold of log.FC when finding full signature genes for given ident.use
 #' @param fullsigs.min.pct The min frequency to find full signature genes for given ident
 #' @param heatmap.height Height of output heatmap
