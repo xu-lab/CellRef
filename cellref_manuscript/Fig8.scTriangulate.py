@@ -31,13 +31,3 @@ adata = sc.read('adata_after_scanpy_recipe_rna_1_umap_True.h5ad')
 umap_dual_view_save(adata,cols=['cell_type','cellref_anno','HLCA_anno'],method='umap')
 sctri = ScTriangulate(dir='output_two_cellref_hlca',adata=adata,query=['cellref_anno','HLCA_anno'])
 sctri.lazy_run(compute_metrics_parallel=False)
-
-# investigate
-sctri = ScTriangulate.deserialize('output_two_cellref_hlca/after_rank_pruning.p')
-sctri.add_to_invalid_by_win_fraction(percent=0.25)
-sctri.pruning(method='reassign',abs_thresh=10,remove1=True,reference=sctri.reference)
-sctri.plot_stability(clusters=['cellref_anno@Secretory','HLCA_anno@Club_(non-nasal)'],broke=True,top_ylim=[3.5,5],bottom_ylim=[0,1.5])
-sctri.plot_stability(clusters=['cellref_anno@AT1','HLCA_anno@AT1'],broke=True,top_ylim=[3,4.5],bottom_ylim=[0,1.2])
-sctri.plot_stability(clusters=['cellref_anno@ASMC','HLCA_anno@Myofibroblasts'],broke=True,top_ylim=[2.5,3.5],bottom_ylim=[0,1.5])
-sctri.plot_stability(clusters=['cellref_anno@SCMF','HLCA_anno@Peribronchial_fibroblasts'],broke=False,top_ylim=[2.5,3.5],bottom_ylim=[0,1.5]) Alveolar_MœÜ_CCL3+
-sctri.plot_stability(clusters=['cellref_anno@AM','HLCA_anno@Alveolar_Mφ_CCL3+'],broke=False,top_ylim=[2.5,3.5],bottom_ylim=[0,1.5])
