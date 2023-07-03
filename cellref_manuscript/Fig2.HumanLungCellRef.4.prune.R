@@ -1,5 +1,5 @@
-# With the consistenly predicted cell types, we integrated the data from different donors using RPCA, identified 20 nearest neighbors for each cell in the integration,
-# pruned cells with less than 60% kNN purity, and obtained the final set of cells with cell type annotations for the LungMAP Human Lung CellRef.
+# With the consistenly predicted cell types, we integrated the data from different donors using RPCA, calculated kNN purity using 20 nearest neighbors for each cell in the integration,
+# pruned cells with less than 60% kNN purity to obtain the final set of cells for the LungMAP Human Lung CellRef.
 # The final data were integrated using RPCA for visualization and reference mapping applications.
 
 library(Seurat)
@@ -11,20 +11,20 @@ library(SingleCellExperiment)
 
 options(future.globals.maxSize = 480000 * 1024^2)
 
-
 #################################################################################################################################################
 #################################################################################################################################################
 
 batch_var = "DonorID"
 ident_var = "cellref_type"
 
-# integrated merged data using RPCA for finding nearest neighbors of each cell
+# load the merged data from the previous step
 
 obj = readRDS(file="merged.rds")
 
 obj = CreateSeuratObject(counts=obj@assays$RNA@counts, meta.data=obj@meta.data)
 obj = NormalizeData(obj)
 
+# integrate merged data using Seurat v4 RPCA and find nearest neighbors of each cell for kNN purity calculation
 
 # As the number of batches (104 donors) is large for the RPCA integration, we selected a set of donors as "reference" in the RPCA integration
 
@@ -50,7 +50,6 @@ reference.donors = as.character(refid$Donor)
 
 
 # Perform SCT based integration usign RPCA
-
 DefaultAssay(obj) = "RNA"
 # split the dataset into a list of seurat objects, one for the data from a donor
 objlist <- SplitObject(obj, split.by = batch_var)
@@ -100,12 +99,9 @@ obj.anchors1@anchors$type2 = anchors.df$type2
 obj.anchors1@anchors$type_matched = anchors.df$type_matched
 obj.anchors1@anchors = anchors.df
 
-# Integrate donor from different donors
+# Integrate data from different donors
 combined = NULL
 combined <- IntegrateData(anchorset = obj.anchors1, normalization.method = "SCT", k.weight=100)
-
-#################################################################################################################################################
-#################################################################################################################################################
 
 DefaultAssay(combined) <- "integrated"
 combined <- RunPCA(combined, npcs = npcs, verbose = FALSE)
@@ -131,14 +127,13 @@ purity$score = score
 
 obj@meta.data$nn.purity = nn.purity[rownames(obj@meta.data), "score"]/20
 
-
 # removed cells with purity less than 60%. Seed cells were not removed.
 cells.selected = obj@meta.data
 cells.selected$selected = FALSE
 cells.selected$selected[which(cells.selected$nn.purity>=0.6)] = TRUE
 cells.selected$selected[which(cells.selected$id=="Seed")] = TRUE
 
-ells.selected = subset(cells.selected, selected==TRUE)
+cells.selected = subset(cells.selected, selected==TRUE)
 
 # use the pruned data to construct the final Seurat object for the LungMAP Human Lung CellRef
 counts.selected = obj@assays$RNA@counts[, rownames(cells.selected)]
