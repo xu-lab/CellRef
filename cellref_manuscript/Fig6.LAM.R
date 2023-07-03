@@ -32,7 +32,7 @@ obj@meta.data$predicted.celltype.pruned[which(obj@meta.data$predicted.celltype.s
 
 # saveRDS(obj, file="./Fig6.LAM.A.object.rds")
 
-# exclude cells with prediction score >= the cutoff
+# exclude cells with prediction score < the cutoff
 obj.sub = subset(obj, predicted.celltype.pruned != "Pruned")
 
 # exclude singleton cell type predictions
