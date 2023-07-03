@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/492045620.svg)](https://zenodo.org/badge/latestdoi/492045620)
+
 # CellRef
 Guided construction of single cell reference for human and mouse lung
 
