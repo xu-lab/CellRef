@@ -91,12 +91,11 @@ for (i in 1:length(obj.anchors@object.list)) {
   }
 }
 anchors.df$type_matched = (anchors.df$type1 ==  anchors.df$type2)
-anchors.df = droplevels(subset(anchors.df, type_matched==TRUE))
-
 obj.anchors1 = obj.anchors
 obj.anchors1@anchors$type1 = anchors.df$type1
 obj.anchors1@anchors$type2 = anchors.df$type2
 obj.anchors1@anchors$type_matched = anchors.df$type_matched
+anchors.df = droplevels(subset(anchors.df, type_matched==TRUE))
 obj.anchors1@anchors = anchors.df
 
 # Integrate data from different donors
@@ -186,12 +185,11 @@ for (i in 1:length(obj.anchors@object.list)) {
   }
 }
 anchors.df$type_matched = (anchors.df$type1 ==  anchors.df$type2)
-anchors.df = droplevels(subset(anchors.df, type_matched==TRUE))
-
 obj.anchors1 = obj.anchors
 obj.anchors1@anchors$type1 = anchors.df$type1
 obj.anchors1@anchors$type2 = anchors.df$type2
 obj.anchors1@anchors$type_matched = anchors.df$type_matched
+anchors.df = droplevels(subset(anchors.df, type_matched==TRUE))
 obj.anchors1@anchors = anchors.df
 
 # Integrate donor from different donors
