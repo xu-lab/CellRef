@@ -15,15 +15,14 @@ options(future.globals.maxSize = 1280000 * 1024^2)
 # the "Cluster" column in the metadata contains Leiden based cell clustering
 obj = readRDS(file=".Data/mnn.rds")
 
-# curated candidate cell clusters for the 48 cell types
+# as shown in the vigenette, we used findCandidateClusters function followed by manual curation
+# to identify candidate cell clusters in the integrated data for each of the 48 cell types in the dictionary (Supplementary Data 2 of the manuscript).
+# here, we load the data frame that contains the cell cluster and cell type mapping
 candidate_clusters = readRDS(file=".Data/mnn_cluster_celltype_mapping.rds")
 
-# cell type dictionary for the 48 cell types
-# In our curated candidate cell cluster and cell type mapping above,
-# there are some cell types shared the same candidate cluster.
-# To identify better seed cells for those cell types, we added the positive markers of one cell type
-# as negative markers of the other cell type that share the same candidate cluster, and vice visa.
-# We did this dictionary extension for ASMC and SCMF, AF2 and Chondrocyte, and cDC1 and maDC.
+# load the cell type dictionary for the 48 cell types (Supplementary Data 2 of the manuscript)
+# For cell types that shared the same candidate cluster in the above mapping, including ASMC and SCMF, AF2 and Chondrocyte, cDC1 and maDC, 
+# we added the positive markers of one cell type (e.g., ASMC) as the negative markers of the cell type (i.e., SCMF) that shared the cell cluster, and vice versa, for the seed cell identification.
 ctd = readRDS(file=".Data/HumanLung_CellRef_dictionary.rds")
 
 # Now we identified the seed cells based on the data integration, the candidate cell clusters, and the cell type markers
