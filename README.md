@@ -46,10 +46,10 @@ BiocManager::install(c('BiocGenerics', 'DelayedArray', 'DelayedMatrixStats',
                        'HDF5Array', 'terra', 'ggrastr', 'SingleR', 'scran'))
 ```
 
-Install monocle3
+Install monocle3 (version 1.0.0) 
 
 ```r
-devtools::install_github('cole-trapnell-lab/monocle3')
+devtools::install_github('cole-trapnell-lab/monocle3@1.0.0')
 ```
 
 Install CellRef
