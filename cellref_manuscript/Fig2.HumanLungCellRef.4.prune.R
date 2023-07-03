@@ -105,7 +105,7 @@ combined <- IntegrateData(anchorset = obj.anchors1, normalization.method = "SCT"
 DefaultAssay(combined) <- "integrated"
 combined <- RunPCA(combined, npcs = npcs, verbose = FALSE)
 
-# Find 20 nearest neighbors for each celll
+# Find 20 nearest neighbors for each cell
 combined = FindNeighbors(combined, reduction = "pca", dims=1:200, k.param = 20, nn.method="annoy", annoy.metric="cosine")
 
 # for each cell, calculate the purity of cell type prediction in the neighbors of the cell
