@@ -5,7 +5,7 @@ library(SeuratDisk)
 library(ggplot2)
 library(patchwork)
 
-options(future.globals.maxSize = 128000 * 1024^2) # for 50 Gb RAM
+options(future.globals.maxSize = 128000 * 1024^2)
 
 meta.use = c("orig.ident","nCount_RNA","nFeature_RNA","Dataset","DonorID","DataID", 
              "S.Score","G2M.Score","Phase","pMT","predicted.celltype","predicted.celltype.score","id")
@@ -74,7 +74,8 @@ pred.singleR = data.frame(pred.singleR)
 obj@meta.data$pred_SingleR = as.character(obj@meta.data$predicted.celltype)
 obj@meta.data[rownames(pred.singleR), "pred_SingleR"] = as.character(pred.singleR$pruned.labels)
 
-# Since the Seurat refmap didn't perform well in distinguishing Basal and Suprabasal annotations, we temporarily combined Basal and Suprabasal predictions
+# We noticed that Seurat refmap didn't perform well in distinguishing Basal and Suprabasal annotations, 
+# therefore we combined Basal and Suprabasal annotations before comparing the predictions from refmap and singleR
 obj@meta.data$pred_RefMap[which(obj@meta.data$pred_RefMap %in% c("Basal","Suprabasal"))] = "Basal_Suprabasal"
 obj@meta.data$pred_SingleR[which(obj@meta.data$pred_SingleR %in% c("Basal","Suprabasal"))] = "Basal_Suprabasal"
 
